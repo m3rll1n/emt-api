@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { agency_id } = req.query;
     const { data, error } = await supabase
       .from('users')
-      .select('id, full_name, email, active')
+      .select('id, full_name, email')
       .eq('agency_id', agency_id);
     if (error) return res.status(500).json({ success: false, message: error.message });
     return res.status(200).json(data || []);
@@ -47,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data, error } = await supabase
       .from('users')
       .insert([{ agency_id, full_name: name, email }])
-      .select('id, full_name, email, active')
+      .select('id, full_name, email')
       .single();
     if (error) return res.status(500).json({ success: false, message: error.message });
     return res.status(201).json(data);
