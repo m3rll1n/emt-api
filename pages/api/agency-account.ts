@@ -9,10 +9,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).end();
   }
 
+  console.log('AGENCY ACCOUNT - BODY:', req.body);
+
   // PATCH: Atualizar conta da agência
   if (req.method === 'PATCH') {
     const { agency_id, email, password } = req.body;
     if (!agency_id || (!email && !password)) {
+      console.warn('AGENCY ACCOUNT - DADOS OBRIGATÓRIOS AUSENTES:', req.body);
       return res.status(400).json({ success: false, message: 'Dados obrigatórios ausentes.' });
     }
     let updateData: any = {};
@@ -23,8 +26,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .update(updateData)
       .eq('id', agency_id);
     if (error) {
+      console.error('AGENCY ACCOUNT - ERRO AO ATUALIZAR:', error);
       return res.status(500).json({ success: false, message: 'Erro ao atualizar agência.' });
     }
+    console.log('AGENCY ACCOUNT - SUCESSO:', agency_id);
     return res.status(200).json({ success: true });
   }
   res.status(405).json({ success: false, message: 'Method not allowed' });
