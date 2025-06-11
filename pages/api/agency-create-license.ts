@@ -50,8 +50,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ success: false, message: 'Usuário não encontrado para este email.' });
     }
     // Cria nova licença
-    // Gera um license_key aleatório (exemplo simples)
-    const licenseKey = `LIC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    // Gera um license_key aleatório no formato UUID
+    function uuidv4() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+    const licenseKey = uuidv4();
     const { data: license, error: licenseError } = await supabase
       .from('licenses')
       .insert([{ agency_id, domain, user_id: user.id, license_key: licenseKey }])
