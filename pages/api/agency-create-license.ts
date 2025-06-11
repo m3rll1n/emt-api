@@ -39,10 +39,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.warn('AGENCY CREATE LICENSE - LIMITE ATINGIDO:', { count, limit: agency.license_limit });
       return res.status(403).json({ success: false, message: 'Limite de licenças atingido.' });
     }
+    // Buscar o user_id apenas pelo email
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+    if (userError || !user) {
+      console.error('AGENCY CREATE LICENSE - USUARIO NAO ENCONTRADO:', userError);
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado para este email.' });
+    }
     // Cria nova licença
     const { data: license, error: licenseError } = await supabase
       .from('licenses')
-      .insert([{ agency_id, domain, user_id: null, license_key: undefined }])
+      .insert([{ agency_id, domain, user_id: user.id, license_key: undefined }])
       .select()
       .single();
     if (licenseError || !license) {
