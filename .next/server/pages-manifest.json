@@ -1,5 +1,4 @@
 {
-  "/_error": "pages/_error.js",
   "/api/_supabase": "pages/api/_supabase.js",
   "/api/add-favorite": "pages/api/add-favorite.js",
   "/api/anon-downloads": "pages/api/anon-downloads.js",
@@ -7,7 +6,9 @@
   "/api/migrate-anon-to-user": "pages/api/migrate-anon-to-user.js",
   "/api/migrate-favorites-to-user": "pages/api/migrate-favorites-to-user.js",
   "/api/migrate-user-to-anon": "pages/api/migrate-user-to-anon.js",
+  "/_app": "pages/_app.js",
   "/api/register": "pages/api/register.js",
+  "/_error": "pages/_error.js",
   "/api/remove-favorite": "pages/api/remove-favorite.js",
   "/api/request-download": "pages/api/request-download.js",
   "/api/templates": "pages/api/templates.js",
@@ -16,7 +17,6 @@
   "/api/user-data": "pages/api/user-data.js",
   "/api/user-favorites": "pages/api/user-favorites.js",
   "/api/user-licenses": "pages/api/user-licenses.js",
-  "/_app": "pages/_app.js",
   "/api/validate-license": "pages/api/validate-license.js",
   "/_document": "pages/_document.js",
   "/404": "pages/404.html"

@@ -3,6 +3,16 @@ import supabase from './_supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { user_id, domain } = req.query;
+  // GET: Listar licenças da agência
+  if (req.method === 'GET' && req.query.agency_id) {
+    const { agency_id } = req.query;
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('*')
+      .eq('agency_id', agency_id);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json(data || []);
+  }
   if (req.method === 'GET') {
     const { data, error } = await supabase
       .from('licenses')
