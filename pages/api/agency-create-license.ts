@@ -2,6 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import supabase from './_supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
   // POST: Criar nova licença para agência
   if (req.method === 'POST') {
     const { agency_id, email, domain } = req.body;

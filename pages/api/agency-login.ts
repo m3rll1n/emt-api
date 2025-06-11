@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'segredo-super-seguro';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Libera CORS para todos os domínios
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

@@ -2,6 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import supabase from './_supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // PATCH: Atualizar conta da agência
   if (req.method === 'PATCH') {
     const { agency_id, email, password } = req.body;
