@@ -47,13 +47,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   // POST: Cadastrar novo cliente
   if (req.method === 'POST') {
-    const { agency_id, name, email } = req.body;
+    const { agency_id, name, email, id, password } = req.body;
     if (!agency_id || !name || !email) {
       return res.status(400).json({ success: false, message: 'Dados obrigatórios ausentes.' });
     }
+    // Verifica se já existe usuário com o mesmo email
+    const { data: existingUser, error: existingError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: 'E-mail já cadastrado.' });
+    }
+    // Se id não for enviado, cria usuário no auth e usa o id retornado
+    let userId = id;
+    if (!userId) {
+      // Cria usuário no auth do Supabase
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password: password || Math.random().toString(36).slice(-10), // senha aleatória se não enviada
+        email_confirm: true
+      });
+      if (authError || !authUser || !authUser.user) {
+        return res.status(500).json({ success: false, message: 'Erro ao criar usuário no auth: ' + (authError?.message || 'desconhecido') });
+      }
+      userId = authUser.user.id;
+    }
+    // Agora insere na tabela users
     const { data, error } = await supabase
       .from('users')
-      .insert([{ agency_id, full_name: name, email }])
+      .insert([{ id: userId, agency_id, full_name: name, email }])
       .select('id, full_name, email')
       .single();
     if (error) return res.status(500).json({ success: false, message: error.message });
