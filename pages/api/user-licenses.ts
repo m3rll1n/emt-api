@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Busca as licenças e faz join com users para trazer o email
     const { data, error } = await supabase
       .from('licenses')
-      .select('id, domain, license_key, status, created_at, expires_at, user_id, users(email)')
+      .select('id, domain, license_key, created_at, expires_at, user_id, users(email)')
       .eq('agency_id', agency_id);
     if (error) {
       console.error('USER LICENSES - ERRO AO BUSCAR LICENCAS POR AGENCY_ID:', error, 'agency_id:', agency_id);
@@ -29,15 +29,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const mapped = (data || []).map(l => {
       let client_email = '';
       if (l.users && Array.isArray(l.users) && l.users.length > 0) {
-        client_email = typeof l.users[0]?.email === 'string' ? l.users[0].email : '';
+        client_email = l.users[0]?.email || '';
       } else if (l.users && typeof l.users === 'object' && l.users !== null && 'email' in l.users && typeof (l.users as any).email === 'string') {
         client_email = (l.users as any).email;
+      }
+      // status: 'active' se não expirou, 'expired' se expirou
+      let status = 'active';
+      if (l.expires_at && new Date(l.expires_at) < new Date()) {
+        status = 'expired';
       }
       return {
         client_email,
         domain: l.domain,
         license_key: l.license_key,
-        status: l.status,
+        status,
         created: l.created_at,
         expires: l.expires_at
       };
