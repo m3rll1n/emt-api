@@ -3,13 +3,30 @@ import supabase from './_supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'PATCH, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   console.log('AGENCY ACCOUNT - BODY:', req.body);
+
+  // GET: Buscar dados da agência (incluindo license_limit)
+  if (req.method === 'GET') {
+    const { agency_id } = req.query;
+    if (!agency_id) {
+      return res.status(400).json({ success: false, message: 'agency_id obrigatório' });
+    }
+    const { data, error } = await supabase
+      .from('agencies')
+      .select('id, name, email, license_limit')
+      .eq('id', agency_id)
+      .single();
+    if (error || !data) {
+      return res.status(404).json({ success: false, message: 'Agência não encontrada.' });
+    }
+    return res.status(200).json(data);
+  }
 
   // PATCH: Atualizar conta da agência
   if (req.method === 'PATCH') {
