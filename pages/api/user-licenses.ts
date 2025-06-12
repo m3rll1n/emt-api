@@ -21,9 +21,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('id, domain, license_key, status, created_at, expires_at, user_id, users(email)')
       .eq('agency_id', agency_id);
     if (error) {
-      console.error('USER LICENSES - ERRO AO BUSCAR LICENCAS POR AGENCY_ID:', error);
+      console.error('USER LICENSES - ERRO AO BUSCAR LICENCAS POR AGENCY_ID:', error, 'agency_id:', agency_id);
       return res.status(500).json({ success: false, message: error.message });
     }
+    console.log('USER LICENSES - DATA BRUTA:', data);
     // Mapeia para o formato esperado pelo frontend
     const mapped = (data || []).map(l => {
       let client_email = '';
@@ -41,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         expires: l.expires_at
       };
     });
-    console.log('USER LICENSES - LICENCAS ENCONTRADAS:', mapped);
+    console.log('USER LICENSES - LICENCAS ENCONTRADAS (MAPPED):', mapped);
     return res.status(200).json(mapped);
   }
   if (req.method === 'GET') {
