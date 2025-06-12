@@ -15,16 +15,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET' && req.query.agency_id) {
     const { agency_id } = req.query;
     console.log('USER LICENSES - GET BY AGENCY_ID:', agency_id);
+    // Busca as licenças e faz join com users para trazer o email
     const { data, error } = await supabase
       .from('licenses')
-      .select('*')
+      .select('id, domain, license_key, status, created_at, expires_at, user_id, users(email)')
       .eq('agency_id', agency_id);
     if (error) {
       console.error('USER LICENSES - ERRO AO BUSCAR LICENCAS POR AGENCY_ID:', error);
       return res.status(500).json({ success: false, message: error.message });
     }
-    console.log('USER LICENSES - LICENCAS ENCONTRADAS:', data);
-    return res.status(200).json(data || []);
+    // Mapeia para o formato esperado pelo frontend
+    const mapped = (data || []).map(l => {
+      let client_email = '';
+      if (l.users && Array.isArray(l.users) && l.users.length > 0) {
+        client_email = typeof l.users[0]?.email === 'string' ? l.users[0].email : '';
+      } else if (l.users && typeof l.users === 'object' && l.users !== null && 'email' in l.users && typeof (l.users as any).email === 'string') {
+        client_email = (l.users as any).email;
+      }
+      return {
+        client_email,
+        domain: l.domain,
+        license_key: l.license_key,
+        status: l.status,
+        created: l.created_at,
+        expires: l.expires_at
+      };
+    });
+    console.log('USER LICENSES - LICENCAS ENCONTRADAS:', mapped);
+    return res.status(200).json(mapped);
   }
   if (req.method === 'GET') {
     console.log('USER LICENSES - GET BY USER_ID/DOMAIN:', user_id, domain);
