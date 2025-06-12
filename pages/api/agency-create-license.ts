@@ -2,13 +2,15 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import supabase from './_supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Libera CORS para todos os domínios
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  console.log('AGENCY CREATE LICENSE - REQUEST:', req.method, req.body, req.query);
   if (req.method === 'OPTIONS') {
+    console.log('AGENCY CREATE LICENSE - OPTIONS preflight');
     return res.status(200).end();
   }
+  console.log('AGENCY CREATE LICENSE - METHOD:', req.method);
   console.log('AGENCY CREATE LICENSE - BODY:', req.body);
   // POST: Criar nova licença para agência
   if (req.method === 'POST') {
@@ -59,6 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
     const licenseKey = uuidv4();
+    console.log('AGENCY CREATE LICENSE - GERANDO LICENSE_KEY:', licenseKey);
     const { data: license, error: licenseError } = await supabase
       .from('licenses')
       .insert([{ agency_id, domain, user_id: user.id, license_key: licenseKey }])
@@ -71,5 +74,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('AGENCY CREATE LICENSE - SUCESSO:', license);
     return res.status(201).json({ key: license.license_key });
   }
+  console.warn('AGENCY CREATE LICENSE - METHOD NOT ALLOWED:', req.method);
   res.status(405).json({ success: false, message: 'Method not allowed' });
 }
