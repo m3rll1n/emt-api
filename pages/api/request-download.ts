@@ -5,6 +5,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { user_id, domain, template_id } = req.body;
     console.log('REQUEST-DOWNLOAD - BODY:', req.body);
+    let downloadSuccess = false;
     if (user_id) {
       // Usuário logado: registra em downloads
       const { error } = await supabase.from('downloads').insert([
@@ -14,8 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('REQUEST-DOWNLOAD - ERRO AO INSERIR (logado):', error);
         return res.status(400).json({ success: false, message: error.message });
       }
+      downloadSuccess = true;
       console.log('REQUEST-DOWNLOAD - SUCESSO (logado):', { user_id, domain, template_id });
-      return res.status(200).json({ success: true, message: 'Download registrado' });
     } else if (domain) {
       // Usuário anônimo: registra/incrementa em anon_downloads
       // Busca registro existente
@@ -44,10 +45,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('REQUEST-DOWNLOAD - ERRO AO INSERIR/ATUALIZAR ANON:', upsertError);
         return res.status(400).json({ success: false, message: upsertError.message });
       }
+      downloadSuccess = true;
       console.log('REQUEST-DOWNLOAD - SUCESSO (anon):', { domain, downloads_this_week });
-      return res.status(200).json({ success: true, message: 'Download anônimo registrado' });
     } else {
       return res.status(400).json({ success: false, message: 'Dados obrigatórios ausentes.' });
+    }
+
+    // Se o download foi registrado, buscar o template e retornar o JSON
+    if (downloadSuccess) {
+      const { data: template, error: templateError } = await supabase
+        .from('templates')
+        .select('json_url')
+        .eq('id', template_id)
+        .single();
+      if (templateError || !template?.json_url) {
+        console.error('REQUEST-DOWNLOAD - TEMPLATE NÃO ENCONTRADO:', templateError);
+        return res.status(404).json({ success: false, message: 'Template não encontrado.' });
+      }
+      try {
+        const response = await fetch(template.json_url);
+        if (!response.ok) throw new Error('Erro ao baixar JSON do template');
+        const json = await response.json();
+        return res.status(200).json({ success: true, json });
+      } catch (err) {
+        console.error('REQUEST-DOWNLOAD - ERRO AO BAIXAR JSON:', err);
+        return res.status(500).json({ success: false, message: 'Erro ao baixar JSON do template.' });
+      }
     }
   }
   res.status(405).json({ success: false, message: 'Method not allowed' });
