@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Upsert (atualiza ou insere)
       const { error: upsertError } = await supabase
         .from('anon_downloads')
-        .upsert({ domain, downloads_this_week, last_download_reset }, { onConflict: ['domain'] });
+        .upsert([{ domain, downloads_this_week, last_download_reset }], { onConflict: 'domain' });
       if (upsertError) {
         console.error('REQUEST-DOWNLOAD - ERRO AO INSERIR/ATUALIZAR ANON:', upsertError);
         return res.status(400).json({ success: false, message: upsertError.message });
