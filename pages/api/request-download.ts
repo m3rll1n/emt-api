@@ -4,11 +4,16 @@ import supabase from './_supabase';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { user_id, domain, template_id } = req.body;
+    console.log('REQUEST-DOWNLOAD - BODY:', req.body);
     // Lógica de download (exemplo: inserir registro de download)
     const { error } = await supabase.from('downloads').insert([
       { user_id, domain, template_id, created_at: new Date().toISOString() },
     ]);
-    if (error) return res.status(400).json({ success: false, message: error.message });
+    if (error) {
+      console.error('REQUEST-DOWNLOAD - ERRO AO INSERIR:', error);
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    console.log('REQUEST-DOWNLOAD - SUCESSO:', { user_id, domain, template_id });
     return res.status(200).json({ success: true, message: 'Download registrado' });
   }
   res.status(405).json({ success: false, message: 'Method not allowed' });
