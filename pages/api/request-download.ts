@@ -15,6 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('REQUEST-DOWNLOAD - ERRO AO INSERIR (logado):', error);
         return res.status(400).json({ success: false, message: error.message });
       }
+      // Incrementa downloads_this_week na tabela users
+      const { error: updateError } = await supabase.rpc('increment_user_downloads', { p_user_id: user_id });
+      if (updateError) {
+        console.error('REQUEST-DOWNLOAD - ERRO AO INCREMENTAR downloads_this_week:', updateError);
+        return res.status(400).json({ success: false, message: updateError.message });
+      }
       downloadSuccess = true;
       console.log('REQUEST-DOWNLOAD - SUCESSO (logado):', { user_id, domain, template_id });
     } else if (domain) {
