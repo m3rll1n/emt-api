@@ -5,78 +5,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { user_id, domain, template_id } = req.body;
     console.log('REQUEST-DOWNLOAD - BODY:', req.body);
-    let downloadSuccess = false;
-    if (user_id) {
-      // Usuário logado: registra em downloads
-      const { error } = await supabase.from('downloads').insert([
-        { user_id, domain, template_id, created_at: new Date().toISOString() },
-      ]);
-      if (error) {
-        console.error('REQUEST-DOWNLOAD - ERRO AO INSERIR (logado):', error);
-        return res.status(400).json({ success: false, message: error.message });
-      }
-      // Incrementa downloads_this_week na tabela users
-      const { error: updateError } = await supabase.rpc('increment_user_downloads', { p_user_id: user_id });
-      if (updateError) {
-        console.error('REQUEST-DOWNLOAD - ERRO AO INCREMENTAR downloads_this_week:', updateError);
-        return res.status(400).json({ success: false, message: updateError.message });
-      }
-      downloadSuccess = true;
-      console.log('REQUEST-DOWNLOAD - SUCESSO (logado):', { user_id, domain, template_id });
-    } else if (domain) {
-      // Usuário anônimo: registra/incrementa em anon_downloads
-      // Busca registro existente
-      const { data, error } = await supabase
-        .from('anon_downloads')
-        .select('*')
-        .eq('domain', domain)
-        .single();
-      if (error && error.code !== 'PGRST116') {
-        // Erro diferente de "not found"
-        console.error('REQUEST-DOWNLOAD - ERRO AO BUSCAR ANON:', error);
-        return res.status(400).json({ success: false, message: error.message });
-      }
-      let downloads_this_week = 1;
-      let last_download_reset = new Date().toISOString();
-      if (data) {
-        // Já existe registro, incrementa
-        downloads_this_week = (data.downloads_this_week || 0) + 1;
-        last_download_reset = data.last_download_reset;
-      }
-      // Upsert (atualiza ou insere)
-      const { error: upsertError } = await supabase
-        .from('anon_downloads')
-        .upsert([{ domain, downloads_this_week, last_download_reset }], { onConflict: 'domain' });
-      if (upsertError) {
-        console.error('REQUEST-DOWNLOAD - ERRO AO INSERIR/ATUALIZAR ANON:', upsertError);
-        return res.status(400).json({ success: false, message: upsertError.message });
-      }
-      downloadSuccess = true;
-      console.log('REQUEST-DOWNLOAD - SUCESSO (anon):', { domain, downloads_this_week });
-    } else {
-      return res.status(400).json({ success: false, message: 'Dados obrigatórios ausentes.' });
+
+    // Chama a função RPC que já faz todo o controle de cota e incrementos
+    const { data, error } = await supabase.rpc('request_download', {
+      p_user_id: user_id || null,
+      p_domain: domain,
+      p_template_id: template_id,
+    });
+    if (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    if (!data || !data[0] || data[0].success === false) {
+      return res.status(400).json({ success: false, message: data?.[0]?.message || 'Erro ao iniciar download.' });
     }
 
-    // Se o download foi registrado, buscar o template e retornar o JSON
-    if (downloadSuccess) {
+    // Se chegou aqui, download permitido, buscar o template e retornar o JSON
+    // Descobre se é template global ou user_template
+    let templateUrl = null;
+    if (user_id) {
+      // Tenta buscar em user_templates primeiro
+      const { data: userTemplate, error: userTplErr } = await supabase
+        .from('user_templates')
+        .select('json_url')
+        .eq('id', template_id)
+        .single();
+      if (userTemplate && userTemplate.json_url) {
+        templateUrl = userTemplate.json_url;
+      }
+    }
+    if (!templateUrl) {
+      // Busca em templates globais
       const { data: template, error: templateError } = await supabase
         .from('templates')
         .select('json_url')
         .eq('id', template_id)
         .single();
-      if (templateError || !template?.json_url) {
-        console.error('REQUEST-DOWNLOAD - TEMPLATE NÃO ENCONTRADO:', templateError);
-        return res.status(404).json({ success: false, message: 'Template não encontrado.' });
+      if (template && template.json_url) {
+        templateUrl = template.json_url;
       }
-      try {
-        const response = await fetch(template.json_url);
-        if (!response.ok) throw new Error('Erro ao baixar JSON do template');
-        const json = await response.json();
-        return res.status(200).json({ success: true, json });
-      } catch (err) {
-        console.error('REQUEST-DOWNLOAD - ERRO AO BAIXAR JSON:', err);
-        return res.status(500).json({ success: false, message: 'Erro ao baixar JSON do template.' });
-      }
+    }
+    if (!templateUrl) {
+      return res.status(404).json({ success: false, message: 'Template não encontrado.' });
+    }
+    try {
+      const response = await fetch(templateUrl);
+      if (!response.ok) throw new Error('Erro ao baixar JSON do template');
+      const json = await response.json();
+      return res.status(200).json({ success: true, json });
+    } catch (err) {
+      console.error('REQUEST-DOWNLOAD - ERRO AO BAIXAR JSON:', err);
+      return res.status(500).json({ success: false, message: 'Erro ao baixar JSON do template.' });
     }
   }
   res.status(405).json({ success: false, message: 'Method not allowed' });
