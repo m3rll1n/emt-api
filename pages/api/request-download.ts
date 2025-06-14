@@ -6,11 +6,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { user_id, domain, template_id } = req.body;
     console.log('REQUEST-DOWNLOAD - BODY:', req.body);
 
-    // Chama a função RPC que já faz todo o controle de cota e incrementos
+    // Chama a função RPC com a ordem correta dos argumentos
     const { data, error } = await supabase.rpc('request_download', {
       p_user_id: user_id || null,
-      p_domain: domain,
       p_template_id: template_id,
+      p_domain: domain,
     });
     if (error) {
       return res.status(400).json({ success: false, message: error.message });
