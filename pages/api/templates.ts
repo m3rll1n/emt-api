@@ -24,9 +24,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .filter(tc => tc.template_id === t.id)
         .map(tc => catMap[tc.category_id])
         .filter(Boolean);
+      // Adiciona aviso se emtpro for true
+      let emtpro_warning = undefined;
+      if (t.emtpro === true) {
+        emtpro_warning = 'Esse template possui recursos que precisam do Elementor Pro';
+      }
       return {
         ...t,
         categories: cats,
+        author: t.author || null,
+        description: t.description || null,
+        emtpro: t.emtpro || false,
+        emtpro_warning
       };
     });
     return res.status(200).json(normalized);
